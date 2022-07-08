@@ -7,20 +7,126 @@
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
+      body {
+        background-color: #DAF7A6;
+      }
+      h1 {
+        font-family: Arial, Helvetica, sans-serif;
+        text-align: center;
+      }
+      h2 {
+        font-family: Arial, Helvetica, sans-serif;
+        text-align: center;
+      }
       canvas {
-        position: absolute;
+        background-color: lightskyblue;
+        display: block;
+        margin: 20px auto;
+      }
+      #resultOfTheReturn {
+        padding: 10px;
+        background-color: #173c52;
+        color: #eeeeee;
       }
     </style>
   </head>
 
   <body>
-
-    <canvas>
-      No canvas support!
-    </canvas>
-
+    <h1>Pourcentage de présence de couleur dans un canvas</h1>
+    <h2>Canvas</h2>
+    <canvas id="colorDistributionFromImage"></canvas>
+    <h2>Affichage du retour</h2>
+    <div>
+      <pre id="resultOfTheReturn"></pre>
+    </div>
     <script>
       'use strict';
+
+      (function(){
+        function drawImageInCanvas(canvasId) {
+          const canvas = document.getElementById(canvasId);
+          if (canvas.getContext) {
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgb(144,12,63)';
+            ctx.fillRect(0, 0, 50, 50);
+            ctx.fillStyle = 'rgb(199,0,57)';
+            ctx.fillRect(0, 50, 50, 50);
+            ctx.fillStyle = 'rgb(255,87,51)';
+            ctx.fillRect(50, 0, 50, 50);
+            ctx.fillRect(100, 0, 200, 200);
+            ctx.fillStyle = 'rgb(255,195,0)';
+            ctx.fillRect(50, 50, 50, 50);
+            ctx.fillRect(0, 100, 50, 50);
+            ctx.fillRect(50, 100, 50, 50);
+          }
+        }
+
+        function getColorsDistributionFromCanvasId(canvasId) {
+
+          // Initialisation du canvas
+          const c = document.querySelector(canvasId);
+          // récupération du contexte du canvas
+          const ctx = c.getContext('2d');
+
+          // taille du canvas
+          const numberOfPixelsOnX = c.width;
+          const numberOfPixelsOnY = c.height;
+
+          // récupération des données des pixels présents sur le canvas
+          const pixels = ctx.getImageData(0, 0, c.width, c.height);
+
+          // variables pour parcourir les pixels du canvas
+          let pixelColor = {};
+          let hexColor = '';
+          let pixelHexColors = [];
+
+          // Fonction qui sert à récupérer les données de couleur des pixels en rgb
+          function getPixelColor(x, y) {
+            let index = ((y*(pixels.width*4)) + (x*4));
+            let red = pixels.data[index];
+            let green = pixels.data[index + 1];
+            let blue = pixels.data[index + 2];
+            return {r:red, g:green, b:blue};
+          }
+
+          // boucle qui sert à parcourir tous les pixels de la grille, en extraire la couleur en rgb, la convertir en hex et la mettre dans un tableau
+          for (let y = 1; y < numberOfPixelsOnY; y++) {
+            for (let x = 1; x < numberOfPixelsOnX; x++) {
+              pixelColor = getPixelColor(x, y);
+              hexColor =  "#" + ((1 << 24) + (pixelColor.r << 16) + (pixelColor.g << 8) + pixelColor.b).toString(16).slice(1);
+              pixelHexColors.push(hexColor);
+            }
+          }
+
+          // boucle qui permet de calculer le pourcentage de présence de chaque couleur
+          const percentages = (colorsArray) => colorsArray.reduce((colorIterations, color) => ({
+            ...colorIterations, [color]: (colorIterations [color] || 0) + 100 / (colorsArray.length)
+          }), {});
+
+          const objectOfColorsAndPercentages = percentages(pixelHexColors);
+
+          let arrayOfObjectsOfColorsAndPercentages = [];
+          let sortedArrayOfObjectsOfColorsAndPercentages = [];
+
+          // Boucle qui permet de formater les données selon ce qui est attendu
+          for (const colorAndPercentage in objectOfColorsAndPercentages) {
+            const obj = {
+              color: colorAndPercentage,
+              percentage: objectOfColorsAndPercentages[colorAndPercentage]
+            }
+            arrayOfObjectsOfColorsAndPercentages.push(obj);
+          }
+
+          // Enfin il faut ranger les objets de celui avec le plus grand pourcentage à celui avec le plus faible pourcentage
+          sortedArrayOfObjectsOfColorsAndPercentages = arrayOfObjectsOfColorsAndPercentages.sort((a, b) => b.percentage - a.percentage);
+
+          return sortedArrayOfObjectsOfColorsAndPercentages;
+        }
+
+        drawImageInCanvas('colorDistributionFromImage');
+
+        document.getElementById("resultOfTheReturn").innerHTML=JSON.stringify(getColorsDistributionFromCanvasId('#colorDistributionFromImage'), null, 2);
+      })();
     </script>
   </body>
 
